@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>BSC Fest 2k26</title>
+    <style>
+        :root {
+            --bg: #061424;
+            --accent: #e9f6ff;
+            --muted: #99b9d7;
+            --card: #07233a;
+            --accent-2: #7fd0ff;
+            --highlight: #00f2ff;
+            /* Added for neon effects */
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            font-family: Inter, Segoe UI, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--accent);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .wrap {
+            min-height: 100vh;
+            display: flex;
+            /* Changed to block for pages but flex for centering logic if needed */
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            /* Changed from center to allow scrolling */
+            padding: 40px;
+        }
+
+        /* Page Logic */
+        .page-section {
+            display: none;
+            width: 100%;
+            max-width: 920px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.06));
+            border-radius: 14px;
+            padding: 40px 44px;
+            box-shadow: 0 12px 40px rgba(2, 6, 23, 0.65);
+            text-align: center;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ASCII banner */
+        pre.ascii {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+            line-height: 1;
+            margin: 0 0 18px 0;
+            color: var(--highlight);
+            font-size: 14px;
+            /* Reduced slightly for mobile safety */
+            letter-spacing: 0.6px;
+            opacity: 0.98;
+            filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.6));
+            white-space: pre-wrap;
+            overflow-x: hidden;
+        }
+
+        h1.title {
+            margin: 10px 0 6px 0;
+            font-size: 32px;
+            color: var(--highlight);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        p.lead {
+            margin: 0 0 30px 0;
+            color: var(--muted);
+            max-width: 760px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding-bottom: 20px;
+        }
+
+        /* Center last item if orphaned - REMOVED */
+        /* .grid:has(> .event-card:last-child:nth-child(odd)) .event-card:last-child {
+            grid-column: 1 / -1;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        } */
+
+        .event-card {
+            background: linear-gradient(180deg, var(--card), rgba(2, 20, 36, 0.75));
+            padding: 20px;
+            border-radius: 12px;
+            color: var(--accent);
+            box-shadow: 0 8px 20px rgba(2, 10, 26, 0.55);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+        }
+
+        .event-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--highlight);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+        }
+
+        .event-card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            color: var(--highlight);
+        }
+
+        .event-card p.date {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons & Forms */
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--muted);
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            color: var(--highlight);
+        }
+
+        .form-container {
+            text-align: left;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--muted);
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: white;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--highlight);
+        }
+
+        .btn-register {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(90deg, var(--highlight), #00aaff);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+        }
+
+        .btn-register:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px var(--highlight);
+        }
+
+        footer {
+            margin-top: 40px;
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            pre.ascii {
+                display: none;
+            }
+
+            /* Hide large ascii on mobile */
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="wrap">
+
+        <!-- HOME PAGE -->
+        <div id="home-page" class="card page-section active">
+            <pre class="ascii">
+     ____     _____      ______           _____   _____   _____   __________
+    |  _  \  / ____|   /  _____|         |  ___| | ____| / ____| |___    ___|
+| |_) /  \ (___    | |         ___   | |_    | |__   \ (___      |  |
+|  _ <   \___  \   | |        |___|  |  _|   |  __|  \___  \     |  |
+| |_) \   ____) |  | |_____          | |     | |___   ____) |    |  |
+|____ /  |_____/   \ ______|         |_|     |_____| |_____/     |__|
+            </pre>
+            <h1 class="title">BSC ASCII 2K26</h1>
+            <p class="lead">Join us for a vibrant celebration of talent, tech and culture. Select an event below to
+                register.</p>
+
+            <div class="grid" id="events-grid-container">
+                <!-- Events populated by JS -->
+            </div>
+
+            <footer>Location: College Grounds • Date: March 2026</footer>
+        </div>
+
+        <!-- DETAILS PAGE -->
+        <div id="details-page" class="card page-section">
+            <div style="text-align: left;">
+                <a onclick="showPage('home')" class="back-link">&larr; Back to Events</a>
+            </div>
+
+            <div id="event-details-content" style="margin-bottom: 30px;">
+                <!-- Content injected here -->
+            </div>
+
+            <div class="form-container">
+                <h3
+                    style="color: var(--highlight); margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                    Registration Form</h3>
+                <form id="registration-form" onsubmit="handleRegister(event)">
+                    <input type="hidden" id="event-name" name="event-name">
+
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="name" required placeholder="Your Name">
+                    </div>
+
+                    <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div>
+                            <label>Group</label>
+                            <input type="text" name="group" required placeholder="e.g. 10">
+                        </div>
+                        <div>
+                            <label>Section</label>
+                            <input type="text" name="section" required placeholder="e.g. A">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Year</label>
+                        <select name="year">
+                            <option>1</option>
+                            <option>2</option>
+                            <option selected>3</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn-register">Confirm Registration</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwP9kULUX4ZO-3h70asfSZoX06wTEJRtYnL0FSp8_P4Ea8aHAo7ITAOYVZS4FJYPIIP/exec";
+
+// EVENTS (UI stays same, logic fixed)
+const events = [
+    {
+        id: "TREASURE",
+        title: "Treasure Hunt",
+        date: "March 10, 2026",
+        description: "Live bands, acoustic sessions, and a night full of rhythm and soul."
+    },
+    {
+        id: "WORD",
+        title: "Word Battle",
+        date: "March 11, 2026",
+        description: "Solo & group competitions. Show off your moves and claim the crown."
+    },
+    {
+        id: "CODE",
+        title: "Coding Challenge",
+        date: "March 12, 2026",
+        description: "Algorithms & hackathon. Prove your logic and coding prowess."
+    },
+    {
+        id: "PROJECT",
+        title: "Project Exhibition",
+        date: "March 13, 2026",
+        description: "Paintings & installations. A showcase of student creativity."
+    },
+    {
+        id: "FOOD",
+        title: "Food Stalls",
+        date: "March 14, 2026",
+        description: "Street food stalls with delicacies from around the world."
+    }
+];
+
+// INIT
+document.addEventListener('DOMContentLoaded', () => {
+    initCanvas();
+    renderEvents();
+});
+
+// ROUTING
+function showPage(pageId) {
+    document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+    if (pageId === 'home') document.getElementById('home-page').classList.add('active');
+    if (pageId === 'details') document.getElementById('details-page').classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function openEvent(id) {
+    const event = events.find(e => e.id === id);
+    if (!event) return;
+
+    document.getElementById('event-details-content').innerHTML = `
+        <h1 style="color: var(--highlight); font-size: 2.5rem;">${event.title}</h1>
+        <p style="color: var(--muted); margin-bottom: 20px;">${event.date}</p>
+        <p style="font-size: 1.1rem;">${event.description}</p>
+    `;
+
+    // IMPORTANT: store EVENT ID (not title)
+    document.getElementById('event-name').value = event.id;
+
+    showPage('details');
+}
+
+function renderEvents() {
+    const container = document.getElementById('events-grid-container');
+    container.innerHTML = '';
+
+    events.forEach(event => {
+        const card = document.createElement('div');
+        card.className = 'event-card';
+        card.onclick = () => openEvent(event.id);
+        card.innerHTML = `
+            <h2>${event.title}</h2>
+            <p class="date">${event.date}</p>
+            <span style="color: var(--highlight); font-size: 0.9rem; margin-top: auto;">
+                Register Now →
+            </span>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// FORM SUBMIT (NEW – sends data to Google Sheets)
+fetch("YOUR_NEW_SCRIPT_URL", {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify(data)
+});
+
+    fetch("https://script.google.com/macros/s/AKfycbwP9kULUX4ZO-3h70asfSZoX06wTEJRtYnL0FSp8_P4Ea8aHAo7ITAOYVZS4FJYPIIP/exec", {
+        method: "POST",
+        body: JSON.stringify(data)
+    })
+    .then(res => res.text())
+    .then(msg => {
+        alert("Registration successful!");
+        showPage("home");
+        form.reset();
+    })
+    .catch(err => {
+        alert("Error saving data");
+        console.error(err);
+    });
+}
+// ANIMATION CANVAS (UNCHANGED)
+function initCanvas() {
+    const canvas = document.getElementById('bg-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    let lines = [];
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        initLines();
+    }
+
+    class Line {
+        constructor() { this.init(); }
+        init() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.length = Math.random() * 200 + 100;
+            this.angle = Math.random() * Math.PI * 2;
+            this.speed = Math.random() * 0.5 + 0.1;
+            this.width = Math.random() * 2 + 0.5;
+            this.color = `rgba(0, 242, 255, ${Math.random() * 0.3})`;
+        }
+        update() {
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+            if (this.x < -100 || this.x > width + 100 || this.y < -100 || this.y > height + 100) this.init();
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = this.width;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = this.color;
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(
+                this.x - Math.cos(this.angle) * this.length,
+                this.y - Math.sin(this.angle) * this.length
+            );
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    function initLines() {
+        lines = [];
+        for (let i = 0; i < 40; i++) lines.push(new Line());
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        lines.forEach(line => { line.update(); line.draw(); });
+        requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+}
+</script>
+
+</body>
+
+</html>
